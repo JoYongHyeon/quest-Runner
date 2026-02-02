@@ -1,0 +1,72 @@
+server:
+  port: 8083
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+    open-in-view: false
+
+  # -----------------------------
+  # OAuth2 ?? (?? ??? ??)
+  # -----------------------------
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            # .env ?? ???? ??
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+            # ?? ?? ? Spring Security? ???? ?? URI
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+        provider:
+          google:
+            # ?? OAuth2 ?? JSON?? ??? ?? ID? ???? ??
+            user-name-attribute: sub
+
+
+# -----------------------------
+# JWT ?? (JwtProperties ? ??)
+# -----------------------------
+jwt:
+  # HMAC SHA-256 ??, ?? 32?
+  secret: ${JWT_SECRET}
+  # AccessToken ??(ms)
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION}
+  # RefreshToken ??(ms)
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}
+
+
+# -----------------------------
+# OAuth2 ??? ?? ? ???? Redirect ?? ??
+# -----------------------------
+app:
+  oauth2:
+    #    redirect-uri: ${OAUTH2_REDIRECT_URI}
+    redirect-uri: http://localhost:8070/oauth-success.html
+
+# -----------------------------
+# toss ??? ??? ?
+# -----------------------------
+toss:
+  secret-key: ${TOSS_SECRET_KEY}
