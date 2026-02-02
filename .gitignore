@@ -41,3 +41,7 @@ application-local.yml
 
 ### .env ###
 .env
+
+### prompt ###
+PM_prompt.md
+JAVA_prompt.md

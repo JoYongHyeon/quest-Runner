@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 완료</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 100px; }
+        .container { border: 1px solid #eee; padding: 30px; display: inline-block; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn { display: inline-block; background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>✅ 로그인 성공</h1>
+    <p>포인트 충전 페이지로 이동할 준비가 되었습니다.</p>
+    <div><a href="/payment-test.html" class="btn">포인트 충전하러 가기</a></div>
+</div>
+
+<script>
+    // 1. URL 쿼리 파라미터에서 accessToken 추출
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get("accessToken");
+
+    if (accessToken) {
+        // 2. 브라우저 로컬 스토리지에 저장 (이후 결제 승인 API 호출 시 사용)
+        localStorage.setItem("accessToken", accessToken);
+    } else {
+        alert("인증 정보가 없습니다. 다시 로그인해 주세요.");
+        window.location.href = "/login.html";
+    }
+</script>
+</body>
+</html>
