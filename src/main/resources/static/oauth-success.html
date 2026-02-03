@@ -22,11 +22,40 @@
     const accessToken = params.get("accessToken");
 
     if (accessToken) {
-        // 2. 브라우저 로컬 스토리지에 저장 (이후 결제 승인 API 호출 시 사용)
         localStorage.setItem("accessToken", accessToken);
-    } else {
-        alert("인증 정보가 없습니다. 다시 로그인해 주세요.");
-        window.location.href = "/login.html";
+
+        // 내 정보 조회하여 상태 확인
+        fetch('api/members/me', {
+            method: 'GET',
+            headers: {'Authorization': 'Bearer ' + accessToken}
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("인증 실패");
+            return response.json();
+        })
+        .then(res => {
+            const member = res.data;
+            const contentDiv = document.getElementById('content');
+
+            if (member.status === 'PENDING_PROFILE') {
+                // 온보딩 미완료 -> 온보딩 페이지로 강제 이동
+                alert('가입을 환영합니다! \n 원할한 매칭을 위해 프로필을 완성해주세요.');
+                window.location.href = '/onboarding.html'
+            } else {
+                // 온보딩 완료 -> 메인 홈페이지 화면 렌더링
+                contentDiv.innerHTML = `
+                    <h1>🎉 환영합니다, ${member.nickname}님!</h1>
+                    <p>포지션: ${member.position} | 지역: ${member.region}</p>
+                    <p>당신의 모험을 시작하세요.</p>
+                `;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+            localStorage.removeItem("accessToken");
+            window.location.href = "/login.html";
+        })
     }
 </script>
 </body>

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Quest Runner - 프로필 설정</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <h2 class="text-center mb-4">모험 준비하기</h2>
+    <p class="text-center text-muted mb-5">팀 매칭을 위해 프로필을 완성해주세요.</p>
+
+    <form id="onboardingForm">
+        <!-- 1.닉네임 -->
+        <div class="mb-3">
+            <label for="nickname" class="form-label">닉네임 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="nickname" name="nickname" required minlength="2" maxlength="20"
+                   placeholder="활동명을 입력하세요.">
+        </div>
+
+        <!-- 2. 포지션 && 지역 (Row) -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="position" class="form-label">주 포지션 <span class="text-danger">*</span></label>
+                <select class="form-select" id="position" name="position" required>
+                    <option value="" selected disabled>선택하세요</option>
+                    <option value="BACKEND">백엔드 개발자</option>
+                    <option value="FRONTEND">프론트 엔드 개발자</option>
+                    <option value="DESIGN">디자이너</option>
+                    <option value="PM">기획자 (PM)</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="region" class="form-label">활동 지역 <span class="text-danger">*</span></label>
+                <select class="form-select" id="region" name="region" required>
+                    <option value="" selected disabled>선택하세요</option>
+                    <option value="SEOUL">서울</option>
+                    <option value="GYEONGGI">경기/인천</option>
+                    <option value="DAEJEON">대전/충남</option>
+                    <option value="BUSAN">부산/경남</option>
+                    <option value="GWANGJU">광주/전라</option>
+                    <option value="ETC">기타</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 3. 기술 스택 (체크 박스) -->
+        <div class="mb-3">
+            <label class="form-label">기술 스택 (1개 이상 선택) <span class="text-danger">*</span></label>
+            <div class="tech-stack-container">
+                <!-- 주요 기술 스택 목록 -->
+                <input type="checkbox" class="tech-check-input" id="tech_java" name="techStacks" value="Java">
+                <label class="tech-check-label" for="tech_java">Java</label>
+
+                <input type="checkbox" class="tech-check-input" id="tech_spring" name="techStacks" value="Spring">
+                <label class="tech-check-label" for="tech_spring">Spring</label>
+
+                <input type="checkbox" class="tech-check-input" id="tech_python" name="techStacks" value="Python">
+                <label class="tech-check-label" for="tech_python">Python</label>
+
+                <input type="checkbox" class="tech-check-input" id="tech_js" name="techStacks" value="JavaScript">
+                <label class="tech-check-label" for="tech_js">JavaScript</label>
+
+                <input type="checkbox" class="tech-check-input" id="tech_react" name="techStacks" value="React">
+                <label class="tech-check-label" for="tech_react">React</label>
+
+                <input type="checkbox" class="tech-check-input" id="tech_vue" name="techStacks" value="Vue">
+                <label class="tech-check-label" for="tech_vue">Vue</label>
+
+                <input type="checkbox" class="tech-check-input" id="tech_figma" name="techStacks" value="Figma">
+                <label class="tech-check-label" for="tech_figma">Figma</label>
+            </div>
+
+            <!-- 에러 메시지 영역 -->
+            <div id="techError" class="text-danger mt-1" style="display: none; font-size: 0.9em;">최소 1개의 기술 스택을 선택해주세요.</div>
+        </div>
+
+        <!-- 4. 한줄 소개 -->
+        <div class="mb-3">
+            <label for="intro" class="form-label">한 줄 소개</label>
+            <input type="text" class="form-control" id="intro" name="intro" placeholder="나를 표현하는 한 마디 (선택)">
+        </div>
+
+        <!-- 5. 링크 정보 (선택) -->
+        <div class="mb-3">
+            <label class="form-label">링크 (선택)</label>
+            <div class="input-group mb-2">
+                <span class="input-group-text">GitHub</span>
+                <input type="url" class="form-control" name="gitUrl" placeholder="https://github.com/...">
+            </div>
+            <div class="input-group mb-2">
+                <span class="input-group-text">Blog</span>
+                <input type="url" class="form-control" name="blogUrl" placeholder="https://velog.io/...">
+            </div>
+            <div class="input-group">
+                <span class="input-group-text">Resume</span>
+                <input type="url" class="form-control" name="resumeLink" placeholder="Notion 이력서 등">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2 mt-3">작성 완료</button>
+    </form>
+
+</div>
+</body>
+<script>
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+        alert('로그인이 필요합니다.');
+        window.location.href = "/login.html";
+    }
+
+    document.getElementById("onboardingForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        // 1. Form 데이터 수집
+        const formData = new FormData(e.target);
+        const data = {
+            nickname: formData.get("nickname"),
+            position: formData.get("position"),
+            region: formData.get("region"),
+            intro: formData.get("intro"),
+            gitUrl: formData.get("gitUrl"),
+            blogUrl: formData.get("blogUrl"),
+            resumeLink: formData.get("resumeLink"),
+            techStacks: [] // 배열로 별도 처리
+        }
+
+        // 2. 체크박스 값 배열로 수집
+        document.querySelectorAll('input[name="techStacks"]:checked').forEach((checkbox) => {
+            data.techStacks.push(checkbox.value);
+        })
+
+        // 3. 유효성 검사 (기술 스택 최소 1개)
+        if (data.techStacks.length === 0) {
+            document.getElementById("techError").style.display = "block";
+            return;
+        } else {
+            document.getElementById("techError").style.display = "none";
+        }
+
+        // 4. API 호출
+        fetch('/api/members/onboarding', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + accessToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(async response => {
+            const res = await response.json();
+            if (!response.ok) {
+                throw new Error(res.message || "요청 실패");
+            }
+            return res;
+        })
+        .then(res => {
+            alert(res.message);
+            window.location.href = "/oauth-success.html" // 메인 이동
+        })
+        .catch(err => {
+            console.error(err);
+            alert(err.message);
+        });
+    });
+
+</script>
+<style>
+    body {
+        padding-top: 50px;
+        background-color: #f8f9fa;
+    }
+
+    .container {
+        max-width: 600px;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-label {
+        font-weight: bold;
+    }
+
+    .tech-stack-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .tech-check-input {
+        display: none;
+    }
+
+    .tech-check-label {
+        cursor: pointer;
+        padding: 5px 15px;
+        border: 1px solid #ced4da;
+        border-radius: 20px;
+        transition: all 0.2s;
+    }
+
+    .tech-check-input:checked + .tech-check-label {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+</style>
+</html>

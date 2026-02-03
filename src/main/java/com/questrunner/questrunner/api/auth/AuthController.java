@@ -1,12 +1,16 @@
 package com.questrunner.questrunner.api.auth;
 
-import com.questrunner.questrunner.api.auth.dto.TokenResponse;
+import com.questrunner.questrunner.api.auth.dto.res.TokenResDTO;
 import com.questrunner.questrunner.application.auth.AuthService;
+import com.questrunner.questrunner.application.member.MemberService;
 import com.questrunner.questrunner.global.enums.ErrorCode;
+import com.questrunner.questrunner.global.enums.SuccessCode;
 import com.questrunner.questrunner.global.exception.BusinessException;
+import com.questrunner.questrunner.global.security.oauth2.CustomOAuth2User;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -25,7 +29,7 @@ public class AuthController {
 
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refresh(
+    public ResponseEntity<TokenResDTO> refresh(
             @CookieValue(name = "refreshToken", required = false) String refreshToken,
             HttpServletResponse response
     ) {
@@ -47,7 +51,9 @@ public class AuthController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return ResponseEntity.ok(new TokenResponse(tokens[0]));
+        return ResponseEntity.ok(new TokenResDTO(tokens[0]));
 
     }
 }
+
+
