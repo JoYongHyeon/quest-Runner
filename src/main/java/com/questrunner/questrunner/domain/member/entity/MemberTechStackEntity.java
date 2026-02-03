@@ -13,7 +13,7 @@ import org.hibernate.annotations.Comment;
         indexes = @Index(name = "idx_member_tech_name", columnList = "member_id, tech_name", unique = true))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Comment("회원 보유 기술 스택 (1:N)")
-public class MemberTechStack extends BaseEntity {
+public class MemberTechStackEntity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,12 +30,12 @@ public class MemberTechStack extends BaseEntity {
     private String techName;
 
     // 생성자
-    private MemberTechStack(MemberEntity member, String techName) {
+    private MemberTechStackEntity(MemberEntity member, String techName) {
         this.member = member;
         this.techName = techName;
     }
 
-    public static MemberTechStack of(MemberEntity member, String techName) {
-        return new MemberTechStack(member, techName);
+    public static MemberTechStackEntity of(MemberEntity member, String techName) {
+        return new MemberTechStackEntity(member, techName);
     }
 }

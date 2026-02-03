@@ -94,7 +94,7 @@ public class MemberEntity extends BaseEntity {
 
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MemberTechStack> techStacks = new ArrayList<>();
+    private List<MemberTechStackEntity> techStacks = new ArrayList<>();
 
     @Builder
     private MemberEntity(String email,
@@ -148,7 +148,7 @@ public class MemberEntity extends BaseEntity {
 
     // --- 연관관계 편의 메서드 ---
     public void addTechStack(String techName) {
-        MemberTechStack techStack = MemberTechStack.of(this, techName);
+        MemberTechStackEntity techStack = MemberTechStackEntity.of(this, techName);
         this.techStacks.add(techStack);
     }
     

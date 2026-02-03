@@ -1,7 +1,7 @@
 package com.questrunner.questrunner.api.member.dto.res;
 
 import com.questrunner.questrunner.domain.member.entity.MemberEntity;
-import com.questrunner.questrunner.domain.member.entity.MemberTechStack;
+import com.questrunner.questrunner.domain.member.entity.MemberTechStackEntity;
 import com.questrunner.questrunner.domain.member.vo.Position;
 import com.questrunner.questrunner.domain.member.vo.Region;
 import com.questrunner.questrunner.domain.member.vo.UserStatus;
@@ -36,7 +36,7 @@ public record MemberProfileResDTO(
                 member.getPosition(),
                 member.getRegion(),
                 member.getTechStacks().stream()
-                        .map(MemberTechStack::getTechName)
+                        .map(MemberTechStackEntity::getTechName)
                         .toList()
         );
     }

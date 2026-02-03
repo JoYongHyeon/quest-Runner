@@ -24,7 +24,8 @@ public enum ErrorCode implements ResponseCode {
 
     // Party/Slot (P) - Future
     PARTY_NOT_FOUND(404, "P-001", "존재하지 않는 파티입니다."),
-    SLOT_ALREADY_FILLED(409, "P-002", "이미 채워진 슬롯입니다.");
+    SLOT_ALREADY_FILLED(409, "P-002", "이미 채워진 슬롯입니다."),
+    PARTY_CREATION_LIMIT_EXCEEDED(409, "P-003", "이미 모집 중인 파티가 있습니다.");
 
 
     private final int httpStatus;
