@@ -19,6 +19,7 @@ public enum SuccessCode implements ResponseCode {
 
     // --- 파티 ---
     PARTY_CREATE_SUCCESS(201, "P-S001", "파티가 성공적으로 생성되었습니다."),
+    PARTY_APPLY_SUCCESS(201, "P-S002", "파티 지원이 완료되었습니다."),
     ;
 
     private final int httpStatus;

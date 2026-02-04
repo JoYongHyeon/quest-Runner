@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Quest Runner - 파티 찾기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<body>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">🛡️ 파티 찾기</h2>
+        <a href="/oauth-success.html" class="btn btn-outline-secondary">홈으로</a>
+    </div>
+
+    <!-- 검색 필터 -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body">
+            <form id="searchForm" class="row g-2">
+                <div class="col-md-4">
+                    <select class="form-select" name="region">
+                        <option value="">지역 전체</option>
+                        <option value="SEOUL">서울</option>
+                        <option value="GYEONGGI">경기/인천</option>
+                        <option value="ETC">기타 (온라인)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="position">
+                        <option value="">포지션 전체</option>
+                        <option value="BACKEND">백엔드</option>
+                        <option value="FRONTEND">프론트엔드</option>
+                        <option value="DESIGN">디자이너</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">검색</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 파티 목록 영역 -->
+    <div id="partyList" class="row g-3">
+        <!-- JS로 동적 렌더링 -->
+    </div>
+
+    <!-- 더보기 버튼 -->
+    <div class="text-center mt-4">
+        <button id="loadMoreBtn" class="btn btn-light text-secondary" onclick="loadParties()">더 보기</button>
+    </div>
+</div>
+
+<script>
+    const accessToken = localStorage.getItem("accessToken");
+    let currentPage = 0;
+    const pageSize = 10;
+    let isLastPage = false;
+
+    // 초기 로딩
+    loadParties();
+
+    document.getElementById("searchForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        // 검색 시 초기화
+        loadParties(true);
+    });
+
+    function loadParties(reset = false) {
+        if (reset) {
+            currentPage = 0;
+            isLastPage = false;
+            document.getElementById("partyList").innerHTML = "";
+            document.getElementById("loadMoreBtn").style.display = "inline-block";
+        }
+
+        if (isLastPage) return;
+
+        // 검색 조건 파라미터 생성
+        const form = document.getElementById("searchForm");
+        const region = form.region.value;
+        const position = form.position.value;
+
+        let url = `/api/parties?page=${currentPage}&size=${pageSize}`;
+        if (region && region !== "") url += `&region=${region}`;
+        if (position && position !== "") url += `&position=${position}`;
+
+        fetch(url, {
+            method: 'GET',
+            headers: {'Authorization': 'Bearer ' + accessToken}
+        })
+        .then(res => res.json())
+        .then(res => {
+            const parties = res.data.content;
+            const listContainer = document.getElementById("partyList");
+
+            if (parties.length === 0 && currentPage === 0) {
+                listContainer.innerHTML = `<div class="text-center text-muted py-5">모집 중인 파티가 없습니다.</div>`;
+                document.getElementById("loadMoreBtn").style.display = "none";
+                return;
+            }
+
+            console.log(parties)
+
+            parties.forEach(party => {
+                const card = document.createElement("div");
+                card.className = "col-12";
+                card.innerHTML = `
+                    <div class="card party-card p-3" onclick="location.href='/party-detail.html?id=${party.partyId}'">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title fw-bold mb-1">${party.title}</h5>
+                                <p class="card-text text-muted small mb-2">
+                                    <span class="badge bg-light text-dark border me-1">${party.region}</span>
+                                    리더: ${party.leaderNickname}
+                                </p>
+                                <div class="d-flex gap-1">
+                                    ${party.slots.map(slot =>
+                                        `<span class="badge ${slot.status === 'OPEN' ? 'bg-success' : 'bg-secondary'} bg-opacity-75">
+                                            ${slot.position} (${slot.status})
+                                        </span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            <span class="badge bg-primary status-badge">${party.status}</span>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+
+            if (res.data.last) {
+                isLastPage = true;
+                document.getElementById("loadMoreBtn").style.display = "none";
+            } else {
+                currentPage++;
+            }
+        })
+        .catch(err => console.error(err));
+    }
+</script>
+</body>
+<style>
+    body {
+        padding-top: 50px;
+        background-color: #f8f9fa;
+    }
+
+    .container {
+        max-width: 900px;
+    }
+
+    .party-card {
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .party-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-badge {
+        font-size: 0.8rem;
+    }
+</style>
+</html>

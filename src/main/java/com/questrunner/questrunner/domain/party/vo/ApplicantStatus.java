@@ -3,16 +3,13 @@ package com.questrunner.questrunner.domain.party.vo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 슬롯(자리) 상태
- */
 @Getter
 @RequiredArgsConstructor
-public enum SlotStatus {
+public enum ApplicantStatus {
 
-    OPEN("모집 중"),
-    LOCKED("모집 완료"),
-    CLOSED("댣힘(대기)");
+    PENDING("대기 중"),
+    ACCEPTED("수락됨"),
+    REJECTED("거절됨");
 
     private final String description;
 }
