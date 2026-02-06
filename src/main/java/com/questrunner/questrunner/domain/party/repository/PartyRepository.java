@@ -4,6 +4,7 @@ import com.questrunner.questrunner.domain.party.entity.PartyEntity;
 import com.questrunner.questrunner.domain.party.vo.PartyStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PartyRepository extends JpaRepository<PartyEntity, Long>, PartyRepositoryCustom {
@@ -14,4 +15,10 @@ public interface PartyRepository extends JpaRepository<PartyEntity, Long>, Party
      */
     boolean existsByLeaderIdAndStatus(Long leaderId, PartyStatus status);
 
+
+    /**
+     * 내가 만든 파티 조회 (최신 순)
+     *
+     */
+    List<PartyEntity> findAllByLeaderIdOrderByCreatedAtDesc(Long leaderId);
 }

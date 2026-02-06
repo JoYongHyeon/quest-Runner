@@ -1,12 +1,16 @@
 package com.questrunner.questrunner.application.party;
 
+import com.questrunner.questrunner.api.party.dto.req.ApplicantDecisionReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartyApplyReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartySearchCondition;
+import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 public interface PartyService {
 
@@ -50,4 +54,34 @@ public interface PartyService {
      * @param req 지원 정보 (슬롯 ID, 메시지)
      */
     void applyParty(Long memberId, PartyApplyReqDTO req);
+
+
+    /**
+     * 특정 파티의 지원자 목록을 조회합니다. (파티장 전용)
+     *
+     * @param leaderId 요청한 회원 (파티장) ID
+     * @param partyId partyId 파티 ID
+     * @return 지원자 목록 DTO 리스트
+     */
+    List<PartyApplicantResDTO> getApplicants(Long leaderId, Long partyId);
+
+
+    /**
+     * 지원자를 수락하거나 거절합니다.
+     * 수락 시 해당 슬롯은 장금 (LOCKED) 처리됩니다.
+     *
+     * @param leaderId 요청한 회원(파티장) ID
+     * @param applicantId applicantId 지원 내역 ID
+     * @param req 결정 상태 (ACCEPTED/REJECTED)
+     */
+    void decideApplicant(Long leaderId, Long applicantId, ApplicantDecisionReqDTO req);
+
+
+    /**
+     * 내가 생성한 파티 목록을 조회한다.
+     *
+     * @param memberId 회원 ID (파티장)
+     * @return 파티 목록 DTO
+     */
+    List<PartyListResDTO> getMyParties(Long memberId);
 }

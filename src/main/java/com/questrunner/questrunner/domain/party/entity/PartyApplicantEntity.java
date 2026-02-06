@@ -25,7 +25,7 @@ public class PartyApplicantEntity extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private ApplicantStatus applicantStatus;
+    private ApplicantStatus status;
 
     @Column(length = 500)
     private String message;
@@ -43,6 +43,15 @@ public class PartyApplicantEntity extends BaseEntity {
         this.slot = slot;
         this.member = member;
         this.message = message;
-        this.applicantStatus = ApplicantStatus.PENDING;
+        this.status = ApplicantStatus.PENDING;
+    }
+
+
+    public void accept() {
+        this.status = ApplicantStatus.ACCEPTED;
+    }
+
+    public void reject() {
+        this.status = ApplicantStatus.REJECTED;
     }
 }

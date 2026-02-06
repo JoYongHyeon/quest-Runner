@@ -1,8 +1,10 @@
 package com.questrunner.questrunner.application.party.impl;
 
+import com.questrunner.questrunner.api.party.dto.req.ApplicantDecisionReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartyApplyReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartySearchCondition;
+import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
 import com.questrunner.questrunner.application.party.PartyService;
@@ -15,6 +17,7 @@ import com.questrunner.questrunner.domain.party.entity.PartySlotEntity;
 import com.questrunner.questrunner.domain.party.repository.PartyApplicantRepository;
 import com.questrunner.questrunner.domain.party.repository.PartyRepository;
 import com.questrunner.questrunner.domain.party.repository.PartySlotRepository;
+import com.questrunner.questrunner.domain.party.vo.ApplicantStatus;
 import com.questrunner.questrunner.domain.party.vo.PartyStatus;
 import com.questrunner.questrunner.domain.party.vo.SlotStatus;
 import com.questrunner.questrunner.global.enums.ErrorCode;
@@ -24,6 +27,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -115,5 +120,53 @@ public class PartyServiceImpl implements PartyService {
                 .build();
 
         partyApplicantRepository.save(applicant);
+    }
+
+    @Override
+    public List<PartyApplicantResDTO> getApplicants(Long leaderId, Long partyId) {
+        PartyEntity party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_NOT_FOUND));
+
+        // 권한 검증 : 파티장만 조회 가능
+        if (!party.getLeader().getId().equals(leaderId)) {
+            throw new BusinessException(ErrorCode.NOT_PARTY_LEADER);
+        }
+
+        // 해당 파티의 모든 슬롯에 대한 지원자 조회
+        return partyApplicantRepository.findAllBySlot_Party_Id(partyId).stream()
+                .map(PartyApplicantResDTO::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void decideApplicant(Long leaderId, Long applicantId, ApplicantDecisionReqDTO req) {
+        PartyApplicantEntity applicant = partyApplicantRepository.findById(applicantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICANT_NOT_FOUNT));
+
+        // 권한 검증 : 파티장만 결정 가능
+        if (!applicant.getSlot().getParty().getLeader().getId().equals(leaderId)) {
+            throw new BusinessException(ErrorCode.NOT_PARTY_LEADER);
+        }
+
+        // 상태 변경 분기
+        if (req.status() == ApplicantStatus.ACCEPTED) {
+            // 지원자 상태 -> ACCEPTED
+            // 해당 슬롯 상태 -> LOCKED (마감)
+            applicant.accept();
+            applicant.getSlot().lock();
+
+        } else if (req.status() == ApplicantStatus.REJECTED) {
+            // 지원자 상태 -> REJECTED
+            applicant.reject();
+        }
+    }
+
+    @Override
+    public List<PartyListResDTO> getMyParties(Long memberId) {
+        return partyRepository.findAllByLeaderIdOrderByCreatedAtDesc(memberId)
+                .stream()
+                .map(PartyListResDTO::from)
+                .toList();
     }
 }

@@ -48,4 +48,8 @@ public class PartySlotEntity extends BaseEntity {
     public void assignParty(PartyEntity party) {
         this.party = party;
     }
+
+    public void lock() {
+        this.status = SlotStatus.LOCKED;
+    }
 }

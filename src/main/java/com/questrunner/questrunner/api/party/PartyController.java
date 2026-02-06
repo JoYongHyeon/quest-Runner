@@ -1,8 +1,10 @@
 package com.questrunner.questrunner.api.party;
 
+import com.questrunner.questrunner.api.party.dto.req.ApplicantDecisionReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartyApplyReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO;
 import com.questrunner.questrunner.api.party.dto.req.PartySearchCondition;
+import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
 import com.questrunner.questrunner.application.party.PartyService;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -61,5 +64,33 @@ public class PartyController {
     ) {
         partyService.applyParty(user.memberId(), req);
         return ApiResponse.success(SuccessCode.PARTY_APPLY_SUCCESS, null);
+    }
+
+
+    @GetMapping("/{partyId}/applicants")
+    public ApiResponse<List<PartyApplicantResDTO>> getApplicants(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long partyId
+    ) {
+        List<PartyApplicantResDTO> res = partyService.getApplicants(user.memberId(), partyId);
+        return ApiResponse.success(SuccessCode.OK, res);
+    }
+
+    @PatchMapping("/applicants/{applicantId}")
+    public ApiResponse<Void> decideApplicant(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long applicantId,
+            @RequestBody @Valid ApplicantDecisionReqDTO req
+    ) {
+        partyService.decideApplicant(user.memberId(), applicantId, req);
+        return ApiResponse.success(SuccessCode.APPLICANT_DECISION_SUCCESS, null);
+    }
+
+    @GetMapping("/my")
+    public ApiResponse<List<PartyListResDTO>> getMyParties(
+            @AuthenticationPrincipal CustomOAuth2User user
+    ) {
+        List<PartyListResDTO> res = partyService.getMyParties(user.memberId());
+        return ApiResponse.success(SuccessCode.OK, res);
     }
 }
