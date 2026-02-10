@@ -1,9 +1,18 @@
 package com.questrunner.questrunner.application.member;
 
-import com.questrunner.questrunner.api.member.dto.req.OnboardingReqDTO;
+import com.questrunner.questrunner.api.member.dto.req.MemberProfileReqDTO;
 import com.questrunner.questrunner.api.member.dto.res.MemberProfileResDTO;
 
 public interface MemberService {
+
+
+    /**
+     * 닉네임 존재 여부 확인
+     *
+     * @param nickname 중복 확인할 닉네임
+     * @return 존재하면 true, 없으면 false
+     */
+    boolean checkNicknameAvailability(String nickname);
 
     /**
      * 현재 로그인한 회원의 프로필 정보를 조회한다.
@@ -16,13 +25,12 @@ public interface MemberService {
     MemberProfileResDTO getMyProfile(Long memberId);
 
     /**
-     * 회원의 온보딩(프로필 완성) 프로세스를 수행한다.
-     * 기본 정보(닉네임, 포지션 등)를 업데이트하고, 기술 스택을 재설정 한다.
+     * 회원의 프로필 정보를 업데이트
      *
      * @param memberId 업데이트할 회원의 고유 ID (PK)
-     * @param request 온보딩 폼에서 입력받은 프로필 및 기술 스택 정보
+     * @param request 프로필 수정 요청 DTO
      * @throws com.questrunner.questrunner.global.exception.BusinessException
      * - 해당 ID 의 회원이 존재하지 않을 경우 (MEMBER_NOT_FOUND)
      */
-    void onboard(Long memberId, OnboardingReqDTO request);
+    void updateProfile(Long memberId, MemberProfileReqDTO request);
 }

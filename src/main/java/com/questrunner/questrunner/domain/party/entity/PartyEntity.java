@@ -34,11 +34,6 @@ public class PartyEntity extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Comment("모집 지역 (온라인/서울/경기 등)")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private Region region;
-
     @Comment("파티 상태 (RECRUITING, COMPLETED...)")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -59,12 +54,10 @@ public class PartyEntity extends BaseEntity {
     @Builder
     private PartyEntity(MemberEntity leader,
                         String title,
-                        String content,
-                        Region region) {
+                        String content) {
         this.leader = leader;
         this.title = title;
         this.content = content;
-        this.region = region;
         // 기본 값: 모집 중
         this.status = PartyStatus.RECRUITING;
     }

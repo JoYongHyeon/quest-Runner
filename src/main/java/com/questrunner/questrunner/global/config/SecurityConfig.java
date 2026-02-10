@@ -74,16 +74,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/error",
                                 "/favicon.ico",
-                                "/oauth2/**",     // OAuth2 Authorization 요청 및 콜백 경로
-                                "/h2-console/**", // H2 콘솔 (개발용)
-
-                                // TODO: 화면 없이 임시 화면용 나중에 뺴야함
-                                "/*.html",
-                                "/*.css",
-                                "/*.js"
+                                "/oauth2/**",       // OAuth2 Authorization 요청 및 콜백 경로
+                                "/h2-console/**",   // H2 콘솔 (개발용)
+                                "/api/auth/refresh" // [중요] 토큰 재발급은 AccessToken 없이 요청하므로 반드시 허용 필요 (HttpOnly 쿠키를 이용)
                         ).permitAll()
 
-                        // 결제 승인, 포인트 차감 등 실제 돈이 오가는 API 는 무조건 인증 필요
+
+                        // 무조건 인증 필요
                         .requestMatchers("/api/**").authenticated()
 
                         // 나머지는 인증 필요

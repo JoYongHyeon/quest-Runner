@@ -3,7 +3,6 @@ package com.questrunner.questrunner.api.member.dto.res;
 import com.questrunner.questrunner.domain.member.entity.MemberEntity;
 import com.questrunner.questrunner.domain.member.entity.MemberTechStackEntity;
 import com.questrunner.questrunner.domain.member.vo.Position;
-import com.questrunner.questrunner.domain.member.vo.Region;
 import com.questrunner.questrunner.domain.member.vo.UserStatus;
 
 import java.util.List;
@@ -17,8 +16,6 @@ public record MemberProfileResDTO(
         UserStatus status,
         // 주 포지션 (BACKEND, FRONTEND ...)
         Position position,
-        // 활동 지역
-        Region region,
         // 보유 기술 스택 목록
         List<String> techStacks
 ) {
@@ -34,7 +31,6 @@ public record MemberProfileResDTO(
                 member.getNickname(),
                 member.getStatus(),
                 member.getPosition(),
-                member.getRegion(),
                 member.getTechStacks().stream()
                         .map(MemberTechStackEntity::getTechName)
                         .toList()

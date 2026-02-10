@@ -1,7 +1,6 @@
 package com.questrunner.questrunner.domain.member.entity;
 
 import com.questrunner.questrunner.domain.member.vo.Position;
-import com.questrunner.questrunner.domain.member.vo.Region;
 import com.questrunner.questrunner.domain.member.vo.UserRole;
 import com.questrunner.questrunner.domain.member.vo.UserStatus;
 import com.questrunner.questrunner.global.entity.BaseEntity;
@@ -64,13 +63,8 @@ public class MemberEntity extends BaseEntity {
     @Column(length = 20)
     private Position position;
 
-    @Comment("활동 지역")
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private Region region;
-
-    @Comment("한줄 소개")
-    @Column(length = 255)
+    @Comment("자기 소개 (최대 1000자)")
+    @Column(columnDefinition = "TEXT")
     private String intro;
 
     // --- 링크 정보(옵션) ---
@@ -85,12 +79,6 @@ public class MemberEntity extends BaseEntity {
     @Comment("이력서/포트폴리오 링크")
     @Column(name = "resume_link", length = 500)
     private String resumeLink;
-
-
-    // TODO: 추후 Skin 엔티티와 연관관계 맺을 예정 (현재는 ID만 저장)
-//    @Comment("스킨 ID")
-//    @Column(name = "skin_id", nullable = false)
-//    private Long skinId;
 
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -121,19 +109,17 @@ public class MemberEntity extends BaseEntity {
     }
 
     /**
-     * - 회원가입 후 온보딩(프로필 입력)을 수행
+     * - 회원 프로필 정보를 업데이트 합니다.
      * - 필수 정보가 입력되면 계정 상태를 "ACTIVE" 로 변경하여 활동을 허용
      */
-    public void updateOnboardingProfile(String nickname,
+    public void updateProfile(String nickname,
                                         Position position,
-                                        Region region,
                                         String intro,
                                         String gitUrl,
                                         String blogUrl,
                                         String resumeLink) {
         this.nickname = nickname;
         this.position = position;
-        this.region = region;
         this.intro = intro;
         this.gitUrl = gitUrl;
         this.blogUrl = blogUrl;

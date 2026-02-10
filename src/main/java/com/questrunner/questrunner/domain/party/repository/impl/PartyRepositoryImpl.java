@@ -4,7 +4,6 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.questrunner.questrunner.api.party.dto.req.PartySearchCondition;
 import com.questrunner.questrunner.domain.member.vo.Position;
-import com.questrunner.questrunner.domain.member.vo.Region;
 import com.questrunner.questrunner.domain.party.entity.PartyEntity;
 import com.questrunner.questrunner.domain.party.repository.PartyRepositoryCustom;
 import com.questrunner.questrunner.domain.party.vo.PartyStatus;
@@ -34,7 +33,6 @@ public class PartyRepositoryImpl implements PartyRepositoryCustom {
                 .join(partyEntity.leader, memberEntity).fetchJoin() // 리더 정보 함께 조회(N:1)
                 .leftJoin(partyEntity.slots, partySlotEntity)       // 슬롯 정보 함께 조회(1:N)
                 .where(
-                        eqRegion(condition.region()),
                         eqPosition(condition.position()),
                         partyEntity.status.eq(PartyStatus.RECRUITING)
                 )
@@ -49,7 +47,6 @@ public class PartyRepositoryImpl implements PartyRepositoryCustom {
                 .from(partyEntity)
                 .leftJoin(partyEntity.slots, partySlotEntity)
                 .where(
-                        eqRegion(condition.region()),
                         eqPosition(condition.position()),
                         partyEntity.status.eq(PartyStatus.RECRUITING)
                 )
@@ -72,10 +69,6 @@ public class PartyRepositoryImpl implements PartyRepositoryCustom {
     }
 
     // --- BooleanExpression ---
-    private BooleanExpression eqRegion(Region region) {
-        return region != null ? partyEntity.region.eq(region) : null;
-    }
-
     // 파티의 슬롯 중에 해당 포지션이 하나라도 포함되어 있는지 확인
     private BooleanExpression eqPosition(Position position) {
         return position != null ? partySlotEntity.position.eq(position) : null;

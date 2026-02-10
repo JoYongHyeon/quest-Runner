@@ -1,6 +1,5 @@
 package com.questrunner.questrunner.api.party.dto.res;
 
-import com.questrunner.questrunner.domain.member.vo.Region;
 import com.questrunner.questrunner.domain.party.entity.PartyEntity;
 import com.questrunner.questrunner.domain.party.vo.PartyStatus;
 
@@ -12,7 +11,6 @@ public record PartyDetailResDTO(
         String title,
         String content,
         String leaderNickname,
-        Region region,
         PartyStatus status,
         String createdAt,
         // 슬롯 리스트 (상세 정보 포함)
@@ -24,7 +22,6 @@ public record PartyDetailResDTO(
                 party.getTitle(),
                 party.getContent(),
                 party.getLeader().getNickname(),
-                party.getRegion(),
                 party.getStatus(),
                 party.getCreatedAt().toString(),
                 party.getSlots().stream().map(SlotResDTO::from).toList()

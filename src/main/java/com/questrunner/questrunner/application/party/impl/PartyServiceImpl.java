@@ -59,7 +59,6 @@ public class PartyServiceImpl implements PartyService {
                 .leader(leader)
                 .title(req.title())
                 .content(req.content())
-                .region(req.region())
                 .build();
 
         // 4. 슬롯(모집 포지션) 추가

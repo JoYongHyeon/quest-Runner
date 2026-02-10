@@ -1,5 +1,7 @@
 package com.questrunner.questrunner.application.auth;
 
+import com.questrunner.questrunner.domain.member.entity.MemberEntity;
+import com.questrunner.questrunner.domain.member.repository.MemberRepository;
 import com.questrunner.questrunner.global.enums.ErrorCode;
 import com.questrunner.questrunner.global.exception.BusinessException;
 import com.questrunner.questrunner.global.security.jwt.JwtProvider;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final JwtProvider jwtProvider;
+    private final MemberRepository memberRepository;
 
     /**
      * [토큰 발급 로직]
@@ -25,8 +28,6 @@ public class AuthService {
     public String[] issueTokens(Long userId, String role) {
         String accessToken   = jwtProvider.createAccessToken(userId, role);
         String refreshToken  = jwtProvider.createRefreshToken(userId);
-
-        // TODO: 추 후 Refresh Token DB 저장 필요 시 추가
 
         return new String[]{accessToken, refreshToken};
     }
@@ -49,10 +50,16 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
+        // 3. 사용자 ID 추출
         Long userId = jwtProvider.getUserId(refreshToken);
-        String role = jwtProvider.getUserRole(refreshToken);
 
+        // 4. refreshToken 에는 Role 이 없으므로, DB 에서 최신 Role 을 조회해야 함.
+        MemberEntity member = memberRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
+        String role = member.getRole().getAuthority();
+
+        // 5. 새 토큰 발급
         return issueTokens(userId, role);
     }
 }

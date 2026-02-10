@@ -1,6 +1,6 @@
 package com.questrunner.questrunner.application.member.impl;
 
-import com.questrunner.questrunner.api.member.dto.req.OnboardingReqDTO;
+import com.questrunner.questrunner.api.member.dto.req.MemberProfileReqDTO;
 import com.questrunner.questrunner.api.member.dto.res.MemberProfileResDTO;
 import com.questrunner.questrunner.application.member.MemberService;
 import com.questrunner.questrunner.domain.member.entity.MemberEntity;
@@ -19,6 +19,12 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
 
     @Override
+    public boolean checkNicknameAvailability(String nickname) {
+        // 존재하면 false(사용 불가), 없으면 true(사용 가능)
+        return !memberRepository.existsByNickname(nickname);
+    }
+
+    @Override
     public MemberProfileResDTO getMyProfile(Long memberId) {
 
         // 회원 존재 여부 검증 후 조회
@@ -30,26 +36,25 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public void onboard(Long memberId, OnboardingReqDTO request) {
+    public void updateProfile(Long memberId, MemberProfileReqDTO request) {
 
         MemberEntity member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         /**
          * - 프로필 정보 업데이트
-         * - 온보딩이 완료되면 내부적으로 상태가 PENDING -> ACTIVE 로 변경
+         * - 프로필 추가 입력이 완료되면 내부적으로 상태가 PENDING -> ACTIVE 로 변경
          */
-        member.updateOnboardingProfile(
+        member.updateProfile(
                 request.nickname(),
                 request.position(),
-                request.region(),
                 request.intro(),
                 request.gitUrl(),
                 request.blogUrl(),
                 request.resumeLink()
         );
 
-        // 기술스택 ~10개 미만으로 판단하여 선택
+        // 기술 스택 재설정
         member.clearTechStacks();
         if (request.techStacks() != null) {
             for (String teckName : request.techStacks()) {

@@ -1,6 +1,7 @@
 package com.questrunner.questrunner.api.member;
 
-import com.questrunner.questrunner.api.member.dto.req.OnboardingReqDTO;
+import com.questrunner.questrunner.api.member.dto.req.MemberProfileReqDTO;
+import com.questrunner.questrunner.api.member.dto.req.NicknameCheckResDTO;
 import com.questrunner.questrunner.api.member.dto.res.MemberProfileResDTO;
 import com.questrunner.questrunner.application.member.MemberService;
 import com.questrunner.questrunner.global.common.response.ApiResponse;
@@ -18,6 +19,13 @@ public class MemberController {
 
     private final MemberService memberService;
 
+    @GetMapping("/check-nickname")
+    public ApiResponse<NicknameCheckResDTO> checkNickname(@RequestParam String nickname) {
+        boolean isAvailable = memberService.checkNicknameAvailability(nickname);
+
+        return ApiResponse.success(SuccessCode.OK, new NicknameCheckResDTO(isAvailable));
+    }
+
     @GetMapping("/me")
     public ApiResponse<MemberProfileResDTO> getMyProfile(@AuthenticationPrincipal CustomOAuth2User user) {
         MemberProfileResDTO response = memberService.getMyProfile(user.memberId());
@@ -25,12 +33,12 @@ public class MemberController {
         return ApiResponse.success(SuccessCode.MY_PROFILE_READ_SUCCESS, response);
     }
 
-    @PatchMapping("/onboarding")
-    public ApiResponse<Void> completeOnboarding(
+    @PatchMapping("/profile")
+    public ApiResponse<Void> updateProfile(
             @AuthenticationPrincipal CustomOAuth2User user,
-            @RequestBody @Valid OnboardingReqDTO request
+            @RequestBody @Valid MemberProfileReqDTO request
     ) {
-        memberService.onboard(user.memberId(), request);
-        return ApiResponse.success(SuccessCode.ONBOARDING_UPDATE_SUCCESS, null);
+        memberService.updateProfile(user.memberId(), request);
+        return ApiResponse.success(SuccessCode.PROFILE_UPDATE_SUCCESS, null);
     }
 }

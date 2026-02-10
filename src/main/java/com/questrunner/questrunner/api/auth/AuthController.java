@@ -45,8 +45,11 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .maxAge(Duration.parse("14 * 24 * 60 * 60")) // 14일
+                .maxAge(Duration.ofDays(14))
+                // 가장 엄격 ( 같은 사이트에서 온 요청에만 쿠키를 보냄
                 .sameSite("Strict")
+                // Lax 권장 -> 기본값
+//                .sameSite("Lax")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

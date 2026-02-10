@@ -14,7 +14,7 @@ public enum SuccessCode implements ResponseCode {
 
     // --- 회원 ---
     MEMBER_SIGUP_SUCCESS(201, "M-S001", "회원가입이 완료되었습니다."),
-    ONBOARDING_UPDATE_SUCCESS(200, "M-S002", "프로필 설정이 성공적으로 저장되었습니다."),
+    PROFILE_UPDATE_SUCCESS(200, "M-S002", "프로필 정보가 성공적으로 저장되었습니다."),
     MY_PROFILE_READ_SUCCESS(200, "M-S003", "회원 정보 조회에 성공했습니다."),
 
     // --- 파티 ---
