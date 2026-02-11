@@ -8,7 +8,6 @@ import com.questrunner.questrunner.domain.member.vo.UserStatus;
 import java.util.List;
 
 public record MemberProfileResDTO(
-
         Long id,
         String  email,
         String nickname,
@@ -17,7 +16,15 @@ public record MemberProfileResDTO(
         // 주 포지션 (BACKEND, FRONTEND ...)
         Position position,
         // 보유 기술 스택 목록
-        List<String> techStacks
+        List<String> techStacks,
+        // 자기 소개
+        String intro,
+        // 링크(gitHub)
+        String gitUrl,
+        // 링크(blog)
+        String blogUrl,
+        // 링크(이력서)
+        String resumeLink
 ) {
 
     /**
@@ -33,7 +40,11 @@ public record MemberProfileResDTO(
                 member.getPosition(),
                 member.getTechStacks().stream()
                         .map(MemberTechStackEntity::getTechName)
-                        .toList()
+                        .toList(),
+                member.getIntro(),
+                member.getGitUrl(),
+                member.getBlogUrl(),
+                member.getResumeLink()
         );
     }
 }

@@ -54,11 +54,15 @@ public class MemberServiceImpl implements MemberService {
                 request.resumeLink()
         );
 
-        // 기술 스택 재설정
+        // 기술 스택 재설정 (DELETE -> INSERT 순서 보장 로직)
         member.clearTechStacks();
+
+        // 강제 Flush: DELETE 쿼리를 DB에 먼저 전송하여 Unique 충돌 방지
+        memberRepository.flush();
+
         if (request.techStacks() != null) {
-            for (String teckName : request.techStacks()) {
-                member.addTechStack(teckName);
+            for (String techName : request.techStacks()) {
+                member.addTechStack(techName);
             }
         }
 

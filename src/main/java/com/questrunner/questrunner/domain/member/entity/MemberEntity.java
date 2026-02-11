@@ -91,7 +91,6 @@ public class MemberEntity extends BaseEntity {
                          String providerId,
                          UserRole role,
                          UserStatus status,
-//                         Long skinId,
                          LocalDateTime lastLoginAt) {
         this.email       = email;
         this.nickname    = nickname;
@@ -99,7 +98,6 @@ public class MemberEntity extends BaseEntity {
         this.providerId  = providerId;
         this.role        = role;
         this.status      = status;
-//        this.skinId      = skinId;
         this.lastLoginAt = lastLoginAt;
     }
 
