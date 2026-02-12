@@ -1,9 +1,6 @@
 package com.questrunner.questrunner.application.party;
 
-import com.questrunner.questrunner.api.party.dto.req.ApplicantDecisionReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartyApplyReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartySearchCondition;
+import com.questrunner.questrunner.api.party.dto.req.*;
 import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
@@ -44,7 +41,7 @@ public interface PartyService {
      * @return 파티 상세 정보 DTO
      * @throws com.questrunner.questrunner.global.exception.BusinessException PARTY_NOT_FOUND
      */
-    PartyDetailResDTO getPartyDetail(Long partyId);
+    PartyDetailResDTO getPartyDetail(Long memberId, Long partyId);
 
 
     /**
@@ -84,4 +81,12 @@ public interface PartyService {
      * @return 파티 목록 DTO
      */
     List<PartyListResDTO> getMyParties(Long memberId);
+
+
+    /**
+     * 파티 정보를 수정합니다.
+     * - LOCKED(채용 확정) 된 슬롯은 삭제/수정할 수 없습니다.
+     * - OPEN(모집 중) 인 슬롯은 요청된 정보로 전면 교체됩니다.
+     */
+    void updateParty(Long leaderId, Long partyId, PartyUpdateReqDTO req);
 }

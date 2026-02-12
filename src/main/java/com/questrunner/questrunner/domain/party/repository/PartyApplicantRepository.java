@@ -12,4 +12,7 @@ public interface PartyApplicantRepository extends JpaRepository<PartyApplicantEn
 
     // 파티 ID 로 모든 지원자 조회 (N:1 관계 타고 조회)
     List<PartyApplicantEntity> findAllBySlot_Party_Id(Long partyId);
+
+    // 슬롯 삭제 시 해당 슬롯의 지원자 일괄 삭제 (파티 수정 OPEN 슬롯 교체용)
+    void deleteAllBySlot_Id(Long slotId);
 }

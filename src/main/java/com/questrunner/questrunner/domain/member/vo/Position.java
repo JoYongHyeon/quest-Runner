@@ -9,11 +9,10 @@ public enum Position {
 
     BACKEND("BACKEND", "백엔드"),
     FRONTEND("FRONTEND", "프론트엔드"),
-    DESIGN("DESIGN", "디자인"),
-    PM("PM", "기획/PM"),
-    DEVOPS("DEVOPS", "데브옵스"),
-    DATA("DATA", "데이터"),
-    ETC("ETC", "기타");
+    DEVOPS("DEVOPS", "DevOps"),
+    DBA("DBA", "DBA"),
+    PM("PM", "기획자 (PM)"),
+    DESIGN("DESIGN", "디자이너");
 
     private final String code;
     private final String desc;

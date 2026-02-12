@@ -1,19 +1,18 @@
 package com.questrunner.questrunner.application.party.impl;
 
-import com.questrunner.questrunner.api.party.dto.req.ApplicantDecisionReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartyApplyReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartySearchCondition;
+import com.questrunner.questrunner.api.party.dto.req.*;
+import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO.LinkCreateReq;
+import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO.SlotCreateReq;
+import com.questrunner.questrunner.api.party.dto.req.PartyUpdateReqDTO.LinkUpdateReq;
+import com.questrunner.questrunner.api.party.dto.req.PartyUpdateReqDTO.SlotUpdateReq;
 import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
+import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO.LinkResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
 import com.questrunner.questrunner.application.party.PartyService;
 import com.questrunner.questrunner.domain.member.entity.MemberEntity;
 import com.questrunner.questrunner.domain.member.repository.MemberRepository;
-import com.questrunner.questrunner.domain.member.vo.Position;
-import com.questrunner.questrunner.domain.party.entity.PartyApplicantEntity;
-import com.questrunner.questrunner.domain.party.entity.PartyEntity;
-import com.questrunner.questrunner.domain.party.entity.PartySlotEntity;
+import com.questrunner.questrunner.domain.party.entity.*;
 import com.questrunner.questrunner.domain.party.repository.PartyApplicantRepository;
 import com.questrunner.questrunner.domain.party.repository.PartyRepository;
 import com.questrunner.questrunner.domain.party.repository.PartySlotRepository;
@@ -28,7 +27,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +50,6 @@ public class PartyServiceImpl implements PartyService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 2. 파티 생성 제한 정책 확인 (현재 모집 중인 파티가 있으면 추가 생성 불가)
-        // TODO : 현재는 1개이지만 추 후 결제에 따라 로직을 변경해야함 (결제 시 추가 파티 생성 가능)
         if (partyRepository.existsByLeaderIdAndStatus(leaderId, PartyStatus.RECRUITING)) {
             throw new BusinessException(ErrorCode.PARTY_CREATION_LIMIT_EXCEEDED);
         }
@@ -61,14 +61,40 @@ public class PartyServiceImpl implements PartyService {
                 .content(req.content())
                 .build();
 
-        // 4. 슬롯(모집 포지션) 추가
-        for (Position pos : req.slots()) {
-            party.addSlot(PartySlotEntity.builder()
-                    .position(pos)
-                    .build());
+        // 4. 초대 링크
+        if (req.linkList() != null) {
+            for (LinkCreateReq linkReq : req.linkList()) {
+                PartyInviteLinkEntity link = PartyInviteLinkEntity.builder()
+                        .label(linkReq.label())
+                        .url(linkReq.url())
+                        .build();
+
+                party.addLink(link);
+            }
         }
 
-        // 5. 저장
+        // 5. 슬롯 및 기술 스택 추가
+        for (SlotCreateReq slotReq : req.slots()) {
+
+            // 슬롯 생성
+            PartySlotEntity slot = PartySlotEntity.builder()
+                    .position(slotReq.position())
+                    .build();
+
+            // 슬롯 . 기술 스택 추가
+            if (slotReq.techStacks() != null) {
+                for (String techName : slotReq.techStacks()) {
+                    PartySlotTechEntity slotTech = PartySlotTechEntity.builder()
+                            .techName(techName)
+                            .build();
+
+                    slot.addTechStack(slotTech);
+                }
+            }
+            party.addSlot(slot);
+        }
+
+        // 6. 저장
         partyRepository.save(party);
 
         return party.getId();
@@ -81,11 +107,33 @@ public class PartyServiceImpl implements PartyService {
     }
 
     @Override
-    public PartyDetailResDTO getPartyDetail(Long partyId) {
+    public PartyDetailResDTO getPartyDetail(Long memberId, Long partyId) {
         PartyEntity party = partyRepository.findByIdWithAll(partyId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_NOT_FOUND));
 
-        return PartyDetailResDTO.from(party);
+        List<LinkResDTO> linkDtos = new ArrayList<>();
+
+        // 권한 체크: 파티장이거나, 해당 파티의 멤버(지원 수락된 사람)인 경우 링크 공개
+        boolean isLeader = party.getLeader().getId().equals(memberId);
+
+        /**
+         * TODO: 멤버 체크 쿼리 필요
+         * MVP 단계에서는 일단 '파티장 '에게만 보여주는 것으로 시작하거나, 간단히 applicantRepository 를 조회
+         */
+        boolean isMember = false;
+        if (memberId == null) {
+            // TODO: 추 후 멤버 여부 확인 로직 정교화 (현재는 파티장만)
+            isMember = partyApplicantRepository.existsBySlot_Party_IdAndMember_Id(partyId, memberId);
+        }
+
+        // 우선 파티장일 때만 링크를 내려주는 것으로 구현 (멤버 로직은 applicant status 확인 필요)
+        if (isLeader) {
+            linkDtos = party.getLinks().stream()
+                    .map(link -> new LinkResDTO(link.getLabel(), link.getUrl()))
+                    .toList();
+        }
+
+        return PartyDetailResDTO.of(party, linkDtos);
     }
 
     @Override
@@ -167,5 +215,106 @@ public class PartyServiceImpl implements PartyService {
                 .stream()
                 .map(PartyListResDTO::from)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void updateParty(Long leaderId, Long partyId, PartyUpdateReqDTO req) {
+        PartyEntity party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_NOT_FOUND));
+
+        // 1. 권한 검증
+        if (!party.getLeader().getId().equals(leaderId)) {
+            throw new BusinessException(ErrorCode.NOT_PARTY_LEADER);
+        }
+
+        // 2. 기본 정보 업데이트
+        party.updateContent(req.title(), req.content());
+
+        // 3. 링크 교체 (전체 삭제 후 재생성)
+        List<PartyInviteLinkEntity> newLinks = new ArrayList<>();
+        if (req.linkList() != null) {
+            for (LinkUpdateReq linkReq : req.linkList()) {
+                newLinks.add(PartyInviteLinkEntity.builder()
+                        .label(linkReq.label())
+                        .url(linkReq.url())
+                        .build());
+            }
+        }
+        party.replaceLinks(newLinks);
+
+
+        // 4. 슬롯 업데이트 로직
+        List<PartySlotEntity> currentSlots = party.getSlots();
+
+        // 4-1. 요청 데이터 분석
+        // 요청에 포함된 ID 목록 추출 (유요한 기존 슬롯 ID 들)
+        List<Long> reqSlotIds = req.slots().stream()
+                .map(SlotUpdateReq::slotId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // 4-2. 삭제할 슬롯 처리 (DB에  있는데 요청에는 없는 슬롯)
+        // 단, LOCKED 상태인 슬롯이 삭제 대상에 포함되면 예외 발생
+        List<PartySlotEntity> toDelete = currentSlots.stream()
+                .filter(slot -> !reqSlotIds.contains(slot.getId()))
+                .toList();
+
+        for (PartySlotEntity slot : toDelete) {
+            if (slot.getStatus() == SlotStatus.LOCKED) {
+                throw new BusinessException(ErrorCode.CANNOT_DELETE_LOCKED_SLOT);
+            }
+            // OPEN 슬롯 삭제 . 지원자도 함께 삭제
+            partyApplicantRepository.deleteAllBySlot_Id(slot.getId());
+            currentSlots.remove(slot);
+        }
+
+        // 4-3. 생성 및 수정 처리
+        for (SlotUpdateReq slotReq : req.slots()) {
+            if (slotReq.slotId() == null) {
+                // [신규 생성] ID 가 없으면 새 슬롯
+                PartySlotEntity newSlot = PartySlotEntity.builder()
+                        .position(slotReq.position())
+                        .build();
+
+                addTechStacks(newSlot, slotReq.techStacks());
+                party.addSlot(newSlot);
+
+            } else {
+                // [기존 수정] ID 가 있으면 찾아서 업데이트
+                PartySlotEntity existingSlot = currentSlots.stream()
+                        .filter(s -> s.getId().equals(slotReq.slotId()))
+                        .findFirst()
+                        .orElseThrow(() -> new BusinessException(ErrorCode.SLOT_NOT_FOUND));
+
+                // LOCKED 슬롯은 수정 불가 (포지션/스택 변경 금지)
+                if (existingSlot.getStatus() == SlotStatus.LOCKED) {
+                    // 요청 된 내용과 기존 내용이 다르면 에러
+                    if (existingSlot.getPosition() != slotReq.position()) {
+                        throw new BusinessException(ErrorCode.CANNOT_DELETE_LOCKED_SLOT);
+                    }
+                    // 변경 없이 넘어감
+                    continue;
+                }
+
+                // OPEN 슬롯은 정보 업데이트 (TechStack 은 전체 교체)
+                existingSlot.updatePosition(slotReq.position());
+
+                // 기존 스택 비우기
+                existingSlot.getTechStacks().clear();
+                addTechStacks(existingSlot, slotReq.techStacks());
+            }
+        }
+    }
+
+    // 기술 스택 추가 헬퍼 메서드
+    private void addTechStacks(PartySlotEntity slot, List<String> techStacks) {
+        if (techStacks != null) {
+            for (String techName : techStacks) {
+                slot.addTechStack(PartySlotTechEntity.builder()
+                        .techName(techName)
+                        .build());
+            }
+        }
     }
 }

@@ -1,9 +1,6 @@
 package com.questrunner.questrunner.api.party;
 
-import com.questrunner.questrunner.api.party.dto.req.ApplicantDecisionReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartyApplyReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO;
-import com.questrunner.questrunner.api.party.dto.req.PartySearchCondition;
+import com.questrunner.questrunner.api.party.dto.req.*;
 import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
@@ -40,8 +37,12 @@ public class PartyController {
     }
 
     @GetMapping("/{partyId}")
-    public ApiResponse<PartyDetailResDTO> getpartyDetail(@PathVariable Long partyId) {
-        PartyDetailResDTO response = partyService.getPartyDetail(partyId);
+    public ApiResponse<PartyDetailResDTO> getpartyDetail(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long partyId) {
+
+        Long memberId = (user != null) ? user.memberId() : null;
+        PartyDetailResDTO response = partyService.getPartyDetail(memberId, partyId);
         return ApiResponse.success(SuccessCode.OK, response);
     }
 
@@ -92,5 +93,15 @@ public class PartyController {
     ) {
         List<PartyListResDTO> res = partyService.getMyParties(user.memberId());
         return ApiResponse.success(SuccessCode.OK, res);
+    }
+
+    @PatchMapping("/{partyId}")
+    public ApiResponse<Void> updateParty(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long partyId,
+            @RequestBody @Valid PartyUpdateReqDTO req
+    ) {
+        partyService.updateParty(user.memberId(), partyId, req);
+        return ApiResponse.success(SuccessCode.PARTY_UPDATE_SUCCESS, null);
     }
 }

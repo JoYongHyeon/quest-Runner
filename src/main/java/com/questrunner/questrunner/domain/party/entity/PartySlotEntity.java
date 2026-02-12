@@ -10,6 +10,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Comment;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @Table(name = "party_slot")
@@ -37,6 +40,11 @@ public class PartySlotEntity extends BaseEntity {
     @JoinColumn(name = "party_id", nullable = false)
     private PartyEntity party;
 
+    // 기술 스택 리스트
+    @OneToMany(mappedBy = "slot", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PartySlotTechEntity> techStacks = new ArrayList<>();
+
+    // 생성자
     @Builder
     private PartySlotEntity(Position position) {
         this.position = position;
@@ -47,6 +55,21 @@ public class PartySlotEntity extends BaseEntity {
     // 연관관계 설정용 (PartyEntity 에서 호출)
     public void assignParty(PartyEntity party) {
         this.party = party;
+    }
+
+    /**
+     * 슬롯에 요구 기술 스택을 추가 - (양방향 매핑)
+     */
+    public void addTechStack(PartySlotTechEntity techStack) {
+        this.techStacks.add(techStack);
+        techStack.assignSlot(this);
+    }
+
+    /**
+     * 슬롯 포지션 수정 메서드
+     */
+    public void updatePosition(Position position) {
+        this.position = position;
     }
 
     public void lock() {

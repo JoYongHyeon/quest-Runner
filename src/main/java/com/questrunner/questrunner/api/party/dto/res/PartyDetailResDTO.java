@@ -13,10 +13,13 @@ public record PartyDetailResDTO(
         String leaderNickname,
         PartyStatus status,
         String createdAt,
-        // 슬롯 리스트 (상세 정보 포함)
-        List<SlotResDTO> slots
+        List<SlotResDTO> slots,
+        List<LinkResDTO> linkList
 ) {
-    public static PartyDetailResDTO from(PartyEntity party) {
+
+    public record LinkResDTO(String label, String url) {}
+
+    public static PartyDetailResDTO of(PartyEntity party, List<LinkResDTO> links) {
         return new PartyDetailResDTO(
                 party.getId(),
                 party.getTitle(),
@@ -24,7 +27,8 @@ public record PartyDetailResDTO(
                 party.getLeader().getNickname(),
                 party.getStatus(),
                 party.getCreatedAt().toString(),
-                party.getSlots().stream().map(SlotResDTO::from).toList()
+                party.getSlots().stream().map(SlotResDTO::from).toList(),
+                links
         );
     }
 }

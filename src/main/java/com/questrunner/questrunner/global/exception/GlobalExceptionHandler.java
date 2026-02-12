@@ -2,6 +2,7 @@ package com.questrunner.questrunner.global.exception;
 
 import com.questrunner.questrunner.global.common.response.ApiResponse;
 import com.questrunner.questrunner.global.enums.ErrorCode;
+import com.questrunner.questrunner.global.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

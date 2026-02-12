@@ -1,7 +1,6 @@
 package com.questrunner.questrunner.domain.party.entity;
 
 import com.questrunner.questrunner.domain.member.entity.MemberEntity;
-import com.questrunner.questrunner.domain.member.vo.Region;
 import com.questrunner.questrunner.domain.party.vo.PartyStatus;
 import com.questrunner.questrunner.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -39,7 +38,6 @@ public class PartyEntity extends BaseEntity {
     @Column(nullable = false, length = 20)
     private PartyStatus status;
 
-
     // 파티장(리더) - N:1
     @ManyToOne(fetch =FetchType.LAZY)
     @JoinColumn(name = "leader_id", nullable = false)
@@ -50,7 +48,12 @@ public class PartyEntity extends BaseEntity {
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartySlotEntity> slots = new ArrayList<>();
 
+    // 초대 링크 리스트
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PartyInviteLinkEntity> links = new ArrayList<>();
 
+
+    // 생성자
     @Builder
     private PartyEntity(MemberEntity leader,
                         String title,
@@ -62,14 +65,39 @@ public class PartyEntity extends BaseEntity {
         this.status = PartyStatus.RECRUITING;
     }
 
-    // --- 비즈니스 메서드 ---
 
     /**
-     * 파티에 새 슬롯 (모집 포지션)을 추가한다.
+     * 파티에 새 슬롯 (모집 포지션)을 추가 (양방향 매핑)
      */
     public void addSlot(PartySlotEntity slot) {
         this.slots.add(slot);
         // 연관관계 편의 메서드
         slot.assignParty(this);
+    }
+
+    /**
+     * 파티에 초대 링크를 추가 (양방향 매핑)
+     */
+    public void addLink(PartyInviteLinkEntity link) {
+        this.links.add(link);
+        link.assignParty(this);
+    }
+
+    /**
+     * 기본 정보 수정
+     */
+    public void updateContent(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
+
+    /**
+     * 링크 전체 교체
+     */
+    public void replaceLinks(List<PartyInviteLinkEntity> newLinks) {
+        this.links.clear();
+        for (PartyInviteLinkEntity link : newLinks) {
+            this.addLink(link);
+        }
     }
 }
