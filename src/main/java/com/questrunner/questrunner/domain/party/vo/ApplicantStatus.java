@@ -9,7 +9,10 @@ public enum ApplicantStatus {
 
     PENDING("대기 중"),
     ACCEPTED("수락됨"),
-    REJECTED("거절됨");
+    REJECTED("거절됨"),
+    QUIT("중도 탈퇴"),
+    KICKED("강제 추방")
+    ;
 
     private final String description;
 }

@@ -6,6 +6,7 @@ import com.questrunner.questrunner.api.party.dto.req.PartyCreateReqDTO.SlotCreat
 import com.questrunner.questrunner.api.party.dto.req.PartyUpdateReqDTO.LinkUpdateReq;
 import com.questrunner.questrunner.api.party.dto.req.PartyUpdateReqDTO.SlotUpdateReq;
 import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
+import com.questrunner.questrunner.api.party.dto.res.PartyApplicationListResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO.LinkResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
@@ -111,29 +112,33 @@ public class PartyServiceImpl implements PartyService {
         PartyEntity party = partyRepository.findByIdWithAll(partyId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_NOT_FOUND));
 
-        List<LinkResDTO> linkDtos = new ArrayList<>();
+        // 1. 해당 파티의 모든 지원자 조회 (ACCEPTED 상태인 사람을 찾기 위해)
+        List<PartyApplicantEntity> applicants = partyApplicantRepository.findAllBySlot_Party_Id(partyId);
 
-        // 권한 체크: 파티장이거나, 해당 파티의 멤버(지원 수락된 사람)인 경우 링크 공개
-        boolean isLeader = party.getLeader().getId().equals(memberId);
-
-        /**
-         * TODO: 멤버 체크 쿼리 필요
-         * MVP 단계에서는 일단 '파티장 '에게만 보여주는 것으로 시작하거나, 간단히 applicantRepository 를 조회
-         */
-        boolean isMember = false;
-        if (memberId == null) {
-            // TODO: 추 후 멤버 여부 확인 로직 정교화 (현재는 파티장만)
-            isMember = partyApplicantRepository.existsBySlot_Party_IdAndMember_Id(partyId, memberId);
+        // 2. 내 지원 상태 조회 (applicants 리스트에서 찾으면 DB 조회 1회 절약 가능)
+        ApplicantStatus myStatus = null;
+        if (memberId != null) {
+            myStatus = applicants.stream()
+                    .filter(app -> app.getMember().getId().equals(memberId))
+                    .findFirst()
+                    .map(PartyApplicantEntity::getStatus)
+                    .orElse(null);
         }
 
-        // 우선 파티장일 때만 링크를 내려주는 것으로 구현 (멤버 로직은 applicant status 확인 필요)
-        if (isLeader) {
+        // 3. 링크 공개 여부 확인
+        // 파티장 (리더)이거나, 내 지원 상태가 '수락 (ACCEPTED)' 인 경우에만 링크를 보여줌
+        boolean isLeader = party.getLeader().getId().equals(memberId);
+        boolean isAcceptedMember = (myStatus == ApplicantStatus.ACCEPTED);
+
+        List<LinkResDTO> linkDtos = new ArrayList<>();
+        if (isLeader || isAcceptedMember) {
             linkDtos = party.getLinks().stream()
                     .map(link -> new LinkResDTO(link.getLabel(), link.getUrl()))
                     .toList();
         }
 
-        return PartyDetailResDTO.of(party, linkDtos);
+        // 4. DTO 반환 (나의 지원 상태 포함)
+        return PartyDetailResDTO.of(party, linkDtos, myStatus, applicants);
     }
 
     @Override
@@ -189,7 +194,7 @@ public class PartyServiceImpl implements PartyService {
     @Transactional
     public void decideApplicant(Long leaderId, Long applicantId, ApplicantDecisionReqDTO req) {
         PartyApplicantEntity applicant = partyApplicantRepository.findById(applicantId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICANT_NOT_FOUNT));
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICANT_NOT_FOUND));
 
         // 권한 검증 : 파티장만 결정 가능
         if (!applicant.getSlot().getParty().getLeader().getId().equals(leaderId)) {
@@ -261,11 +266,13 @@ public class PartyServiceImpl implements PartyService {
                 .toList();
 
         for (PartySlotEntity slot : toDelete) {
-            if (slot.getStatus() == SlotStatus.LOCKED) {
-                throw new BusinessException(ErrorCode.CANNOT_DELETE_LOCKED_SLOT);
-            }
-            // OPEN 슬롯 삭제 . 지원자도 함께 삭제
+            // [정책 변경] LOCKED (승인 완료) 된 슬롯도 파티장이 원하면 삭제 가능하도록 정책 완화.
+            // 단 해당 슬롯에 연결된 지원자 (Applicant) 정보도 함께 삭제됨
+
+            // 1. 지원자 데이터 삭제 (OPEN, LOCKED 상관 없이 모두 삭제)
             partyApplicantRepository.deleteAllBySlot_Id(slot.getId());
+
+            // 2. 슬롯 리스트에서 제거
             currentSlots.remove(slot);
         }
 
@@ -305,6 +312,77 @@ public class PartyServiceImpl implements PartyService {
                 addTechStacks(existingSlot, slotReq.techStacks());
             }
         }
+    }
+
+    @Override
+    public List<PartyApplicationListResDTO> getMyAppliedParties(Long memberId) {
+        // 회원이 지원한 모든 내역을 조회하여 DTO 로 변환
+        return partyApplicantRepository.findAllByMemberId(memberId).stream()
+                .map(PartyApplicationListResDTO::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void cancelApplication(Long memberId, Long applicantId) {
+        // 1. 조회
+        PartyApplicantEntity applicant = partyApplicantRepository.findById(applicantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICANT_NOT_FOUND));
+
+        // 2. 권한 검증 (본인 확인)
+        applicant.validateOwner(memberId);
+
+        // 3. 상태 검증 (PENDING 상태만  삭제 가능)
+        if (applicant.getStatus() != ApplicantStatus.PENDING) {
+            // "이미 수락되었거나 거절된 지원입니다." 에러 코드
+            throw new BusinessException(ErrorCode.CANNOT_CANCEL_ACCEPTED);
+        }
+
+        // 4. 로직 수행 (삭제)
+        partyApplicantRepository.delete(applicant);
+
+    }
+
+    @Override
+    @Transactional
+    public void quitParty(Long memberId, Long applicantId) {
+        // 1. 조회
+        PartyApplicantEntity applicant = partyApplicantRepository.findById(applicantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICANT_NOT_FOUND));
+
+        // 2. 권한 검증
+        applicant.validateOwner(memberId);
+
+        // 3. 상태 검증
+        applicant.quit();
+
+        // 4. 로직 수행 (상태 변경 -> Entity 위임)
+        applicant.quit();
+    }
+
+    @Override
+    @Transactional
+    public void kickApplicant(Long leaderId, Long applicantId, PartyKickReqDTO req) {
+        // 1. 지원 내역 조회
+        PartyApplicantEntity applicant = partyApplicantRepository.findById(applicantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICANT_NOT_FOUND));
+
+        // 2. 권한 검증 (파티장만 가능)
+        if (!applicant.getSlot().getParty().getLeader().getId().equals(leaderId)) {
+            throw new BusinessException(ErrorCode.NOT_PARTY_LEADER);
+        }
+
+        // 3. 상태 검증 (이미 멤버인 사람만 추방 가능)
+        if (applicant.getStatus() != ApplicantStatus.ACCEPTED) {
+            throw new BusinessException(ErrorCode.CANNOT_KICK_NOT_MEMBER);
+        }
+
+        // 4. 추방 처리 (엔티티 위임)
+        applicant.kick(req.reason());
+
+        // 5. 슬롯 다시. 열기 (새 멤버 모집을 위해)
+        // ACCEPTED 상태 였다면 해당 슬롯은 LOCKED 였을 것이므로, 다시 OPEN 상태로 변경
+        applicant.getSlot().open();
     }
 
     // 기술 스택 추가 헬퍼 메서드

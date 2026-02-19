@@ -2,6 +2,7 @@ package com.questrunner.questrunner.application.party;
 
 import com.questrunner.questrunner.api.party.dto.req.*;
 import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
+import com.questrunner.questrunner.api.party.dto.res.PartyApplicationListResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
 import org.springframework.data.domain.Page;
@@ -89,4 +90,41 @@ public interface PartyService {
      * - OPEN(모집 중) 인 슬롯은 요청된 정보로 전면 교체됩니다.
      */
     void updateParty(Long leaderId, Long partyId, PartyUpdateReqDTO req);
+
+    /**
+     * 내가 지원한 파티(퀘스트) 목록을 조회 합니다.
+     *
+     * @param memberId 조회할 회원의 ID
+     * @return 지원한 파티 목록 DTO 리스트
+     */
+    List<PartyApplicationListResDTO> getMyAppliedParties(Long memberId);
+
+    /**
+     * 지원자가 승인 전 (PENDING) 상태에서 지원을 취소합니다.
+     * - DB 에서 지원 내역을 완전히 삭제합니다. (기록 x)
+     *
+     * @param memberId 요청한 회원(지원자) ID
+     * @param applicantId 취소할 지원 내역 ID
+     */
+    void cancelApplication(Long memberId, Long applicantId);
+
+    /**
+     * 지원자가 승인 후 (ACCEPTED) 상태에서 파티를 탈퇴합니다.
+     * - DB 내역을 보존하고 상태를 QUIT(중도 탈퇴)으로 변경합니다.
+     *
+     * @param memberId 요청한 회원(지원자) ID
+     * @param applicantId 탈퇴할 지원 내역 ID
+     */
+    void quitParty(Long memberId, Long applicantId);
+
+    /**
+     * 파티장이 특정 지원자를 강제 추방합니다.
+     * - 지원자 상태를 KICKED 로 변경하고, 사유를 기록합니다.
+     * - 해당 지원자가 차지하고 있던 슬롯(LOCKED)은 다시 OPEN 상태로 변경되어 모집을 재개합니다.
+     *
+     * @param leaderId 요청한 파티장 ID
+     * @param applicantId 추방할 지원 내역 ID
+     * @param req 추방 사유가 담긴 DTO
+     */
+    void kickApplicant(Long leaderId, Long applicantId, PartyKickReqDTO req);
 }

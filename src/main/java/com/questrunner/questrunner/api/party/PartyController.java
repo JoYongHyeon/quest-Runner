@@ -2,10 +2,12 @@ package com.questrunner.questrunner.api.party;
 
 import com.questrunner.questrunner.api.party.dto.req.*;
 import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
+import com.questrunner.questrunner.api.party.dto.res.PartyApplicationListResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
 import com.questrunner.questrunner.application.party.PartyService;
 import com.questrunner.questrunner.global.common.response.ApiResponse;
+import com.questrunner.questrunner.global.common.response.PageResponse;
 import com.questrunner.questrunner.global.enums.SuccessCode;
 import com.questrunner.questrunner.global.security.oauth2.CustomOAuth2User;
 import jakarta.validation.Valid;
@@ -27,17 +29,17 @@ public class PartyController {
 
 
     @GetMapping
-    public ApiResponse<Page<PartyListResDTO>> getPartyList(
+    public ApiResponse<PageResponse<PartyListResDTO>> getPartyList(
             @ModelAttribute PartySearchCondition condition,
             Pageable pageable
     ) {
         Page<PartyListResDTO> response = partyService.getPartyList(condition, pageable);
 
-        return ApiResponse.success(SuccessCode.OK, response);
+        return ApiResponse.success(SuccessCode.OK, PageResponse.from(response));
     }
 
     @GetMapping("/{partyId}")
-    public ApiResponse<PartyDetailResDTO> getpartyDetail(
+    public ApiResponse<PartyDetailResDTO> getPartyDetail(
             @AuthenticationPrincipal CustomOAuth2User user,
             @PathVariable Long partyId) {
 
@@ -103,5 +105,41 @@ public class PartyController {
     ) {
         partyService.updateParty(user.memberId(), partyId, req);
         return ApiResponse.success(SuccessCode.PARTY_UPDATE_SUCCESS, null);
+    }
+
+    @GetMapping("/my-applied")
+    public ApiResponse<List<PartyApplicationListResDTO>> getMyAppliedParties(
+            @AuthenticationPrincipal CustomOAuth2User user
+    ) {
+        List<PartyApplicationListResDTO> res = partyService.getMyAppliedParties(user.memberId());
+        return ApiResponse.success(SuccessCode.OK, res);
+    }
+
+    @DeleteMapping("/applications/{applicantId}")
+    public ApiResponse<Void> cancelApplication(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long applicantId
+    ) {
+        partyService.cancelApplication(user.memberId(), applicantId);
+        return ApiResponse.success(SuccessCode.OK, null);
+    }
+
+    @PatchMapping("/applications/{applicantId}/quit")
+    public ApiResponse<Void> quitParty(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long applicantId
+    ) {
+        partyService.quitParty(user.memberId(), applicantId);
+        return ApiResponse.success(SuccessCode.OK, null);
+    }
+
+    @PatchMapping("/applicants/{applicantId}/kick")
+    public ApiResponse<Void> kickApplicant(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long applicantId,
+            @RequestBody @Valid PartyKickReqDTO req
+    ) {
+        partyService.kickApplicant(user.memberId(), applicantId, req);
+        return ApiResponse.success(SuccessCode.OK, null);
     }
 }

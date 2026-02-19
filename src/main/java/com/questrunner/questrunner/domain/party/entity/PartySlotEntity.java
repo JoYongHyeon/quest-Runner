@@ -75,4 +75,11 @@ public class PartySlotEntity extends BaseEntity {
     public void lock() {
         this.status = SlotStatus.LOCKED;
     }
+
+    /**
+     * 슬롯을 다시 모집 중 상태로 변경 (추방 시 호출)
+     */
+    public void open() {
+        this.status = SlotStatus.OPEN;
+    }
 }

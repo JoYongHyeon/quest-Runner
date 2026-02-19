@@ -18,7 +18,12 @@ public record PartyApplicantResDTO(
         // 현재 상태 (PENDING 등)
         ApplicantStatus status,
         // 지원 일시
-        String appliedAt
+        String appliedAt,
+
+        // 평가용  링크 정보
+        String gitUrl,
+        String blogUrl,
+        String resumeLink
 ) {
 
     public static PartyApplicantResDTO from(PartyApplicantEntity entity) {
@@ -29,7 +34,10 @@ public record PartyApplicantResDTO(
                 entity.getMember().getPosition().getDesc(),
                 entity.getMessage(),
                 entity.getStatus(),
-                entity.getCreatedAt().toString()
+                entity.getCreatedAt().toString(),
+                entity.getMember().getGitUrl(),
+                entity.getMember().getBlogUrl(),
+                entity.getMember().getResumeLink()
         );
     }
 }
