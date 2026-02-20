@@ -5,6 +5,7 @@ import com.questrunner.questrunner.api.party.dto.res.PartyApplicantResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyApplicationListResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
+import com.questrunner.questrunner.global.exception.BusinessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -127,4 +128,26 @@ public interface PartyService {
      * @param req 추방 사유가 담긴 DTO
      */
     void kickApplicant(Long leaderId, Long applicantId, PartyKickReqDTO req);
+
+    /**
+     * 퀘스트를 공식적으로 시작합니다. (RECRUITING -> IN_PROGRESS)
+     * @param leaderId 요청한 리더 ID
+     * @param partyId 시작할 파티 ID
+     * @throws BusinessException NOT_ENOUGH_MEMBERS (팀원이 없을 경우)
+     */
+    void startQuest(Long leaderId, Long partyId);
+
+    /**
+     * 퀘스트를 성공적으로 완료 처리합니다. (IN_PROGRESS -> COMPLETED)
+     * @param leaderId 요청한 리더 ID
+     * @param partyId 완료할 파티 ID
+     */
+    void completeQuest(Long leaderId, Long partyId);
+
+    /**
+     * 파티 모집을 취소합니다. (파티장 전용)
+     * @param leaderId 요청한 파티장 ID
+     * @param partyId 취소할 파티 ID
+     */
+    void cancelParty(Long leaderId, Long partyId);
 }

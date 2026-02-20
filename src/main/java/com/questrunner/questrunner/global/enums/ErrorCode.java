@@ -36,7 +36,11 @@ public enum ErrorCode implements ResponseCode {
     NOT_MY_APPLICATION(403, "P-012", "본인의 지원 내역만 취소/탈퇴할 수 있습니다."),
     CANNOT_CANCEL_ACCEPTED(400, "P-013", "이미 승인된 지원은 취소할 수 없습니다. 탈퇴 기능을 이용해주세요."),
     CANNOT_QUIT_NOT_ACCEPTED(400, "P-014", "승인된 상태가 아니므로 탈퇴할 수 없습니다."),
-    CANNOT_KICK_NOT_MEMBER(400, "P-015", "파티 멤버가 아니므로 추방할 수 없습니다.")
+    CANNOT_KICK_NOT_MEMBER(400, "P-015", "파티 멤버가 아니므로 추방할 수 없습니다."),
+    ALREADY_CANCELED(400, "P-016", "이미 취소된 파티입니다."),
+    CANNOT_MODIFY_CLOSED_PARTY(400, "P-017", "종료되거나 취소된 퀘스트는 수정하거나 팀원을 관리할 수 없습니다."),
+    INVALID_PARTY_STATUS(400, "P-018", "현재 상태에서는 수행할 수 없는 작업입니다."),
+    NOT_ENOUGH_MEMBERS(400, "P-019", "최소 1명 이상의 팀원이 확정되어야 퀘스트를 시작할 수 있습니다.")
     ;
 
 

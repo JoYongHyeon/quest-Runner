@@ -142,4 +142,31 @@ public class PartyController {
         partyService.kickApplicant(user.memberId(), applicantId, req);
         return ApiResponse.success(SuccessCode.OK, null);
     }
+
+    @PatchMapping("/{partyId}/start")
+    public ApiResponse<Void> startQuest(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long partyId
+    ) {
+        partyService.startQuest(user.memberId(), partyId);
+        return ApiResponse.success(SuccessCode.OK, null);
+    }
+
+    @PatchMapping("/{partyId}/complete")
+    public ApiResponse<Void> completeQuest(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long partyId
+    ) {
+        partyService.completeQuest(user.memberId(), partyId);
+        return ApiResponse.success(SuccessCode.OK, null);
+    }
+
+    @PatchMapping("/{partyId}/cancel")
+    public ApiResponse<Void> cancelParty(
+            @AuthenticationPrincipal CustomOAuth2User user,
+            @PathVariable Long partyId
+    ) {
+        partyService.cancelParty(user.memberId(), partyId);
+        return ApiResponse.success(SuccessCode.PARTY_CANCEL_SUCCESS, null);
+    }
 }

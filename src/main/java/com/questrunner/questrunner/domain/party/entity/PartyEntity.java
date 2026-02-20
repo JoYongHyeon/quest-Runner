@@ -3,6 +3,8 @@ package com.questrunner.questrunner.domain.party.entity;
 import com.questrunner.questrunner.domain.member.entity.MemberEntity;
 import com.questrunner.questrunner.domain.party.vo.PartyStatus;
 import com.questrunner.questrunner.global.entity.BaseEntity;
+import com.questrunner.questrunner.global.enums.ErrorCode;
+import com.questrunner.questrunner.global.exception.BusinessException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -66,6 +68,7 @@ public class PartyEntity extends BaseEntity {
     }
 
 
+
     /**
      * 파티에 새 슬롯 (모집 포지션)을 추가 (양방향 매핑)
      */
@@ -99,5 +102,35 @@ public class PartyEntity extends BaseEntity {
         for (PartyInviteLinkEntity link : newLinks) {
             this.addLink(link);
         }
+    }
+
+    /**
+     * 퀘스트를 시작 (모집 종료 및 협업 단계 진입)
+     */
+    public void start() {
+        if (this.status != PartyStatus.RECRUITING) {
+            throw new BusinessException(ErrorCode.INVALID_PARTY_STATUS);
+        }
+        this.status = PartyStatus.IN_PROGRESS;
+    }
+
+    /**
+     * 퀘스트를 성공 종료 (평판 조작 방지를 위해 IN_PROGRESS 에서만 전이 가능)
+     */
+    public void complete() {
+        if (this.status != PartyStatus.IN_PROGRESS) {
+            throw new BusinessException(ErrorCode.INVALID_PARTY_STATUS);
+        }
+        this.status = PartyStatus.COMPLETED;
+    }
+
+    /**
+     * 파티 모집을 취소 (실패/중단)
+     */
+    public void cancel() {
+        if (this.status == PartyStatus.CANCELED || this.status == PartyStatus.COMPLETED) {
+            throw new BusinessException(ErrorCode.ALREADY_CANCELED);
+        }
+        this.status = PartyStatus.CANCELED;
     }
 }
