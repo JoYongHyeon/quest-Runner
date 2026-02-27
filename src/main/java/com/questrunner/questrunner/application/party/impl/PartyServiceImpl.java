@@ -10,6 +10,7 @@ import com.questrunner.questrunner.api.party.dto.res.PartyApplicationListResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyDetailResDTO.LinkResDTO;
 import com.questrunner.questrunner.api.party.dto.res.PartyListResDTO;
+import com.questrunner.questrunner.api.party.vo.ReputationVO;
 import com.questrunner.questrunner.application.party.PartyService;
 import com.questrunner.questrunner.domain.member.entity.MemberEntity;
 import com.questrunner.questrunner.domain.member.repository.MemberRepository;
@@ -20,6 +21,7 @@ import com.questrunner.questrunner.domain.party.repository.PartySlotRepository;
 import com.questrunner.questrunner.domain.party.vo.ApplicantStatus;
 import com.questrunner.questrunner.domain.party.vo.PartyStatus;
 import com.questrunner.questrunner.domain.party.vo.SlotStatus;
+import com.questrunner.questrunner.global.entity.BaseEntity;
 import com.questrunner.questrunner.global.enums.ErrorCode;
 import com.questrunner.questrunner.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +30,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,6 +81,9 @@ public class PartyServiceImpl implements PartyService {
 
         List<PartyApplicantEntity> applicants = partyApplicantRepository.findAllBySlot_Party_Id(partyId);
 
+        // 요청자가 리더인지 판별
+        boolean isLeader = party.getLeader().getId().equals(memberId);
+
         // 내 지원 상태 조회 (비로그인 시 null)
         ApplicantStatus myStatus = (memberId == null) ? null : applicants.stream()
                 .filter(app -> app.getMember().getId().equals(memberId))
@@ -87,13 +91,28 @@ public class PartyServiceImpl implements PartyService {
                 .map(PartyApplicantEntity::getStatus)
                 .orElse(null);
 
+        // 리더일 경우, 해당 파티에 지원한 모든 유저의 평판을 일괄 계산
+        Map<Long, ReputationVO> reputations = Map.of();
+
+        if (isLeader) {
+            List<Long> applicantMemberIds = applicants.stream()
+                    .filter(app -> app.getStatus() == ApplicantStatus.PENDING)
+                    .map(app -> app.getMember().getId())
+                    .distinct()
+                    .toList();
+
+            reputations = calculateReputations(applicantMemberIds);
+        }
+
         // 권한 확인: 리더이거나 승인된 팀원인 경우에만 초대 링크 공개
         boolean isAuthorized = isAuthorizedToSeeLinks(party, memberId, myStatus);
         List<PartyDetailResDTO.LinkResDTO> linkDtos = isAuthorized
                 ? party.getLinks().stream().map(l -> new PartyDetailResDTO.LinkResDTO(l.getLabel(), l.getUrl())).toList()
                 : new ArrayList<>();
 
-        return PartyDetailResDTO.of(party, linkDtos, myStatus, applicants);
+
+
+        return PartyDetailResDTO.of(party, linkDtos, myStatus, applicants, isLeader, reputations);
     }
 
     @Override
@@ -134,6 +153,16 @@ public class PartyServiceImpl implements PartyService {
         if (req.status() == ApplicantStatus.ACCEPTED) {
             applicant.accept();
             applicant.getSlot().lock(); // 멤버 확정 시 슬롯 잠금
+
+            // 동일 슬롯의 다른 지원자들 자동 거절 처리
+            List<PartyApplicantEntity> others = partyApplicantRepository
+                    .findAllBySlot_IdAndStatus(applicant.getSlot().getId(), ApplicantStatus.PENDING)
+                    .stream()
+                    .filter(other -> !other.getId().equals(applicantId))
+                    .toList();
+
+            partyApplicantRepository.deleteAll(others);
+
         } else {
             applicant.reject();
         }
@@ -236,11 +265,28 @@ public class PartyServiceImpl implements PartyService {
 
     @Override
     public List<PartyApplicantResDTO> getApplicants(Long leaderId, Long partyId) {
+        // 1. 파티 존재 확인 및 파티장 권한 검증
         PartyEntity party = getParty(partyId);
         validateOwner(party, leaderId);
 
-        return partyApplicantRepository.findAllBySlot_Party_Id(partyId).stream()
-                .map(PartyApplicantResDTO::from).toList();
+        // 2. 해당 파티의 모든 지원자 조회
+        List<PartyApplicantEntity> applicants = partyApplicantRepository.findAllBySlot_Party_Id(partyId);
+
+        // 3. 지원자들의 회원 ID 리스트 추출
+        List<Long> memberIds = applicants.stream()
+                .map(app -> app.getMember().getId())
+                .distinct()
+                .toList();
+
+        // 4. 평판 통계 일괄 계산
+        Map<Long, ReputationVO> reputations = calculateReputations(memberIds);
+
+        return applicants.stream()
+                .map(app -> PartyApplicantResDTO.of(
+                        app,
+                        reputations.getOrDefault(app.getMember().getId(), ReputationVO.empty())
+                ))
+                .toList();
     }
 
     // --- [Helper Methods] ---
@@ -374,5 +420,44 @@ public class PartyServiceImpl implements PartyService {
         if (techStacks != null) {
             techStacks.forEach(ts -> slot.addTechStack(PartySlotTechEntity.builder().techName(ts).build()));
         }
+    }
+
+    /**
+     * [Helper] 회원 목록의 평판 통계를 일괄 계산
+     */
+    private Map<Long, ReputationVO> calculateReputations(List<Long> memberIds) {
+        if (memberIds.isEmpty()) return Map.of();
+
+        // 1. 모든 과거 이력 조회
+        List<PartyApplicantEntity> history = partyApplicantRepository.findAllByMemberIdIn(memberIds);
+
+        // 2. 회원별 그룹화 및 통계 산출
+        return memberIds.stream().collect(Collectors.toMap(
+                mid -> mid,
+                mid -> {
+                    List<PartyApplicantEntity> mHistory = history.stream().filter(h -> h.getMember().getId().equals(mid)).toList();
+
+                    int completed = (int) mHistory.stream()
+                            .filter(h -> h.getStatus() == ApplicantStatus.ACCEPTED && h.getSlot().getParty().getStatus() == PartyStatus.COMPLETED)
+                            .count();
+
+                    int kicked = (int) mHistory.stream().filter(h -> h.getStatus() == ApplicantStatus.KICKED).count();
+
+                    int quit = (int) mHistory.stream().filter(h -> h.getStatus() == ApplicantStatus.QUIT).count();
+
+                    int active = (int) mHistory.stream()
+                            .filter(h -> h.getStatus() == ApplicantStatus.ACCEPTED && h.getSlot().getParty().getStatus() == PartyStatus.IN_PROGRESS)
+                            .count();
+
+                    String lastReason = mHistory.stream()
+                            .filter(h -> h.getStatus() == ApplicantStatus.KICKED)
+                            .max(Comparator.comparing(BaseEntity::getCreatedAt))
+                            .map(PartyApplicantEntity::getChangeReason)
+                            .orElse(null);
+
+                    return new ReputationVO(completed, kicked, quit, active, lastReason);
+                }
+        ));
+
     }
 }

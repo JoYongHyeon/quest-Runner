@@ -1,5 +1,6 @@
 package com.questrunner.questrunner.api.party.dto.res;
 
+import com.questrunner.questrunner.api.party.vo.ReputationVO;
 import com.questrunner.questrunner.domain.party.entity.PartyApplicantEntity;
 import com.questrunner.questrunner.domain.party.vo.ApplicantStatus;
 
@@ -23,10 +24,18 @@ public record PartyApplicantResDTO(
         // 평가용  링크 정보
         String gitUrl,
         String blogUrl,
-        String resumeLink
+        String resumeLink,
+
+        // 지원자 평판 데이터
+        int completedCount,   // 성공 종료 횟수
+        int kickedCount,      // 강제 추방 횟수
+        int quitCount,        // 중도 탈퇴 횟수
+        int activeQuestCount, // 현재 진행 중(IN_PROGRESS)인 퀘스트
+        String lastKickedReason // 최근 추방 사유
+
 ) {
 
-    public static PartyApplicantResDTO from(PartyApplicantEntity entity) {
+    public static PartyApplicantResDTO of(PartyApplicantEntity entity, ReputationVO reputationVO) {
         return new PartyApplicantResDTO(
                 entity.getId(),
                 entity.getMember().getId(),
@@ -37,7 +46,13 @@ public record PartyApplicantResDTO(
                 entity.getCreatedAt().toString(),
                 entity.getMember().getGitUrl(),
                 entity.getMember().getBlogUrl(),
-                entity.getMember().getResumeLink()
+                entity.getMember().getResumeLink(),
+                reputationVO.completedCount(),
+                reputationVO.kickedCount(),
+                reputationVO.quitCount(),
+                reputationVO.activeQuestCount(),
+                reputationVO.lastKickedReason()
+
         );
     }
 }

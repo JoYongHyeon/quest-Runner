@@ -1,6 +1,8 @@
 package com.questrunner.questrunner.domain.party.repository;
 
+import com.questrunner.questrunner.domain.member.entity.MemberEntity;
 import com.questrunner.questrunner.domain.party.entity.PartyApplicantEntity;
+import com.questrunner.questrunner.domain.party.vo.ApplicantStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,6 +33,17 @@ public interface PartyApplicantRepository extends JpaRepository<PartyApplicantEn
             "ORDER BY pa.createdAt DESC")
     List<PartyApplicantEntity> findAllByMemberId(@Param("memberId") Long memberId);
 
-    // 파티 + 회원으로 지원 내역 단건 조회 (상태 확인용)
-    Optional<PartyApplicantEntity> findBySlot_Party_IdAndMember_Id(Long slotPartyId, Long memberId);
+    /**
+     * [평판 통계용] 여러 회원의 과거 지원 이력을 . 번에 조회
+     */
+    @Query("SELECT pa FROM PartyApplicantEntity pa " +
+            "JOIN FETCH pa.slot s " +
+            "JOIN FETCH s.party p " +
+            "WHERE pa.member.id IN :memberIds")
+    List<PartyApplicantEntity> findAllByMemberIdIn(@Param("memberIds") List<Long> memberIds);
+
+    /**
+     * [자동 거절용] 특정 슬롯의 특정 상태를 가진 지원자들을 조회
+     */
+    List<PartyApplicantEntity> findAllBySlot_IdAndStatus(Long slotId, ApplicantStatus status);
 }
