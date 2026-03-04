@@ -204,6 +204,9 @@ public class PartyServiceImpl implements PartyService {
         if (!applicant.getMember().getId().equals(memberId)) throw new BusinessException(ErrorCode.NOT_MY_APPLICATION);
 
         applicant.quit();
+
+        // 자진 탈퇴 시에도 해당 슬롯을 다시 모집 가능 상태(OPEN)로 변경하여 추가 모집 허용
+        applicant.getSlot().open();
     }
 
     @Override
@@ -383,6 +386,12 @@ public class PartyServiceImpl implements PartyService {
         // 1. 삭제: 요청 DTO 에 없는 기존 슬롯 제거 (연결된 지원자 데이터 동시 삭제)
         currentSlots.removeIf(slot -> {
             if (!reqSlotIds.contains(slot.getId())) {
+
+                // 확정된 멤버가 있는 슬롯은 절대 삭제 불가
+                if (slot.getStatus() == SlotStatus.LOCKED) {
+                    throw new BusinessException(ErrorCode.CANNOT_DELETE_LOCKED_SLOT);
+                }
+
                 partyApplicantRepository.deleteAllBySlot_Id(slot.getId());
                 return true;
             }

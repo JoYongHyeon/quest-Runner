@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Comment;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +41,14 @@ public class PartyEntity extends BaseEntity {
     @Column(nullable = false, length = 20)
     private PartyStatus status;
 
+    @Comment("퀘스트 실제 시작 일시")
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
+    @Comment("퀘스트 최종 완료 일시")
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     // 파티장(리더) - N:1
     @ManyToOne(fetch =FetchType.LAZY)
     @JoinColumn(name = "leader_id", nullable = false)
@@ -55,6 +64,7 @@ public class PartyEntity extends BaseEntity {
     private List<PartyInviteLinkEntity> links = new ArrayList<>();
 
 
+
     // 생성자
     @Builder
     private PartyEntity(MemberEntity leader,
@@ -63,7 +73,6 @@ public class PartyEntity extends BaseEntity {
         this.leader = leader;
         this.title = title;
         this.content = content;
-        // 기본 값: 모집 중
         this.status = PartyStatus.RECRUITING;
     }
 
@@ -112,6 +121,7 @@ public class PartyEntity extends BaseEntity {
             throw new BusinessException(ErrorCode.INVALID_PARTY_STATUS);
         }
         this.status = PartyStatus.IN_PROGRESS;
+        this.startedAt = LocalDateTime.now();
     }
 
     /**
@@ -122,6 +132,7 @@ public class PartyEntity extends BaseEntity {
             throw new BusinessException(ErrorCode.INVALID_PARTY_STATUS);
         }
         this.status = PartyStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
     }
 
     /**
