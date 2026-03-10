@@ -1,21 +1,21 @@
 server:
-  port: 8083
+  port: 8070
 
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    # 로컬과 운영 DB 동시에 적용
+    url: jdbc:mysql://${DB_HOST}:3306/questrunner?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: ${DB_ROOT_PASSWORD}
 
   h2:
     console:
-      enabled: true
-      path: /h2-console
+      enabled: false
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -24,50 +24,40 @@ spring:
     open-in-view: false
 
   # -----------------------------
-  # OAuth2 ?? (?? ??? ??)
+  # OAuth2
   # -----------------------------
   security:
     oauth2:
       client:
         registration:
           google:
-            # .env ?? ???? ??
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
               - email
-              - profile
-            # ?? ?? ? Spring Security? ???? ?? URI
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
         provider:
           google:
-            # ?? OAuth2 ?? JSON?? ??? ?? ID? ???? ??
             user-name-attribute: sub
 
 
 # -----------------------------
-# JWT ?? (JwtProperties ? ??)
+# JWT
 # -----------------------------
 jwt:
-  # HMAC SHA-256 ??, ?? 32?
   secret: ${JWT_SECRET}
-  # AccessToken ??(ms)
   access-token-expiration: ${JWT_ACCESS_EXPIRATION}
-  # RefreshToken ??(ms)
   refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}
 
 
 # -----------------------------
-# OAuth2 ??? ?? ? ???? Redirect ?? ??
+# OAuth2 프론트 리다이렉트
 # -----------------------------
 app:
   oauth2:
-    #    redirect-uri: ${OAUTH2_REDIRECT_URI}
-    redirect-uri: http://localhost:8070/oauth-success.html
+    redirect-uri: ${OAUTH2_REDIRECT_URI}
 
-# -----------------------------
-# toss ??? ??? ?
-# -----------------------------
-toss:
-  secret-key: ${TOSS_SECRET_KEY}
+logging:
+  level:
+    root: WARN
